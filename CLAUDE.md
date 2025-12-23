@@ -1,210 +1,122 @@
-# Claude Code Rules
+# CLAUDE.md - AI Assistant Guidelines
 
-This file is generated during init for the selected agent.
+## Purpose
 
-You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architext to build products.
+This document defines the rules and constraints for using Claude Code (AI assistant) in the development of the Todo App project.
 
-## Task context
+## Constitutional Authority
 
-**Your Surface:** You operate on a project level, providing guidance to users and executing development tasks via a defined set of tools.
+All AI-assisted development MUST comply with `constitution.md`. This document serves as supplementary guidance for AI interactions.
 
-**Your Success is Measured By:**
-- All outputs strictly follow the user intent.
-- Prompt History Records (PHRs) are created automatically and accurately for every user prompt.
-- Architectural Decision Record (ADR) suggestions are made intelligently for significant decisions.
-- All changes are small, testable, and reference code precisely.
+## Specification-Driven Development Rules
 
-## Core Guarantees (Product Promise)
+### Rule 1: Specifications are the Source of Truth
+- All code generation MUST derive from approved specifications
+- Changes to functionality require specification updates FIRST
+- Never implement features not defined in specifications
 
-- Record every user input verbatim in a Prompt History Record (PHR) after every user message. Do not truncate; preserve full multiline input.
-- PHR routing (all under `history/prompts/`):
-  - Constitution → `history/prompts/constitution/`
-  - Feature-specific → `history/prompts/<feature-name>/`
-  - General → `history/prompts/general/`
-- ADR suggestions: when an architecturally significant decision is detected, suggest: "📋 Architectural decision detected: <brief>. Document? Run `/sp.adr <title>`." Never auto‑create ADRs; require user consent.
+### Rule 2: Reference Documents
+Before generating code, consult these documents in order:
+1. `constitution.md` - Supreme governing document
+2. `specs/specify.md` - Technical specification
+3. `specs/plan.md` - Implementation plan
+4. `specs/tasks.md` - Task breakdown
 
-## Development Guidelines
+### Rule 3: Compliance Verification
+All generated code must:
+- Trace back to a specification requirement
+- Follow the defined architecture (3-layer: CLI → Service → Storage)
+- Use only Python standard library (no external dependencies)
+- Support Python 3.13+
 
-### 1. Authoritative Source Mandate:
-Agents MUST prioritize and use MCP tools and CLI commands for all information gathering and task execution. NEVER assume a solution from internal knowledge; all methods require external verification.
+## Code Generation Principles
 
-### 2. Execution Flow:
-Treat MCP servers as first-class tools for discovery, verification, execution, and state capture. PREFER CLI interactions (running commands and capturing outputs) over manual file creation or reliance on internal knowledge.
+### DO:
+- Generate clean, readable, self-documenting code
+- Follow single responsibility principle
+- Use type hints for all function signatures
+- Include docstrings for classes and public methods
+- Implement proper error handling
+- Follow the established project structure
 
-### 3. Knowledge capture (PHR) for Every User Input.
-After completing requests, you **MUST** create a PHR (Prompt History Record).
+### DO NOT:
+- Add features not in specifications
+- Use external dependencies
+- Deviate from the layered architecture
+- Generate random or non-deterministic behavior
+- Include debug/test code in production modules
+- Skip input validation
 
-**When to create PHRs:**
-- Implementation work (code changes, new features)
-- Planning/architecture discussions
-- Debugging sessions
-- Spec/task/plan creation
-- Multi-step workflows
+## Prohibited Actions
 
-**PHR Creation Process:**
+1. **No Manual Boilerplate** - All code must be AI-generated based on specs
+2. **No External APIs** - Application must work offline
+3. **No Randomness** - Deterministic behavior only
+4. **No Persistence** - Phase I is in-memory only
+5. **No Breaking Changes** - Maintain backward compatibility within phase
 
-1) Detect stage
-   - One of: constitution | spec | plan | tasks | red | green | refactor | explainer | misc | general
+## Required Practices
 
-2) Generate title
-   - 3–7 words; create a slug for the filename.
+### Before Implementation:
+- [ ] Read relevant specification sections
+- [ ] Understand the task context
+- [ ] Identify affected modules
 
-2a) Resolve route (all under history/prompts/)
-  - `constitution` → `history/prompts/constitution/`
-  - Feature stages (spec, plan, tasks, red, green, refactor, explainer, misc) → `history/prompts/<feature-name>/` (requires feature context)
-  - `general` → `history/prompts/general/`
+### During Implementation:
+- [ ] Follow file creation order from plan.md
+- [ ] Implement bottom-up (data → service → CLI)
+- [ ] Validate each layer before proceeding
 
-3) Prefer agent‑native flow (no shell)
-   - Read the PHR template from one of:
-     - `.specify/templates/phr-template.prompt.md`
-     - `templates/phr-template.prompt.md`
-   - Allocate an ID (increment; on collision, increment again).
-   - Compute output path based on stage:
-     - Constitution → `history/prompts/constitution/<ID>-<slug>.constitution.prompt.md`
-     - Feature → `history/prompts/<feature-name>/<ID>-<slug>.<stage>.prompt.md`
-     - General → `history/prompts/general/<ID>-<slug>.general.prompt.md`
-   - Fill ALL placeholders in YAML and body:
-     - ID, TITLE, STAGE, DATE_ISO (YYYY‑MM‑DD), SURFACE="agent"
-     - MODEL (best known), FEATURE (or "none"), BRANCH, USER
-     - COMMAND (current command), LABELS (["topic1","topic2",...])
-     - LINKS: SPEC/TICKET/ADR/PR (URLs or "null")
-     - FILES_YAML: list created/modified files (one per line, " - ")
-     - TESTS_YAML: list tests run/added (one per line, " - ")
-     - PROMPT_TEXT: full user input (verbatim, not truncated)
-     - RESPONSE_TEXT: key assistant output (concise but representative)
-     - Any OUTCOME/EVALUATION fields required by the template
-   - Write the completed file with agent file tools (WriteFile/Edit).
-   - Confirm absolute path in output.
+### After Implementation:
+- [ ] Verify acceptance criteria
+- [ ] Ensure specification compliance
+- [ ] Update task status in tasks.md
 
-4) Use sp.phr command file if present
-   - If `.**/commands/sp.phr.*` exists, follow its structure.
-   - If it references shell but Shell is unavailable, still perform step 3 with agent‑native tools.
+## Module Responsibilities
 
-5) Shell fallback (only if step 3 is unavailable or fails, and Shell is permitted)
-   - Run: `.specify/scripts/bash/create-phr.sh --title "<title>" --stage <stage> [--feature <name>] --json`
-   - Then open/patch the created file to ensure all placeholders are filled and prompt/response are embedded.
+| Module | Responsibility | AI Guidance |
+|--------|---------------|-------------|
+| `models.py` | Data structures | Only Task dataclass |
+| `storage.py` | Data persistence | In-memory dict only |
+| `service.py` | Business logic | Validation, operations |
+| `cli.py` | User interface | Menu, I/O handling |
+| `__main__.py` | Entry point | Dependency wiring |
 
-6) Routing (automatic, all under history/prompts/)
-   - Constitution → `history/prompts/constitution/`
-   - Feature stages → `history/prompts/<feature-name>/` (auto-detected from branch or explicit feature context)
-   - General → `history/prompts/general/`
+## Error Handling Guidelines
 
-7) Post‑creation validations (must pass)
-   - No unresolved placeholders (e.g., `{{THIS}}`, `[THAT]`).
-   - Title, stage, and dates match front‑matter.
-   - PROMPT_TEXT is complete (not truncated).
-   - File exists at the expected path and is readable.
-   - Path matches route.
+- Use `ValueError` for validation errors
+- Return `None` for not-found cases
+- Return `bool` for success/failure operations
+- Display user-friendly messages in CLI (✓ for success, ✗ for errors)
 
-8) Report
-   - Print: ID, path, stage, title.
-   - On any failure: warn but do not block the main command.
-   - Skip PHR only for `/sp.phr` itself.
+## Input Validation Rules
 
-### 4. Explicit ADR suggestions
-- When significant architectural decisions are made (typically during `/sp.plan` and sometimes `/sp.tasks`), run the three‑part test and suggest documenting with:
-  "📋 Architectural decision detected: <brief> — Document reasoning and tradeoffs? Run `/sp.adr <decision-title>`"
-- Wait for user consent; never auto‑create the ADR.
+| Input | Validation | Error Response |
+|-------|------------|----------------|
+| Menu choice | 1-6 integer | Re-prompt |
+| Task ID | Positive integer | Error message |
+| Title | Non-empty, ≤100 chars | Error message |
+| Description | ≤500 chars | Error message |
 
-### 5. Human as Tool Strategy
-You are not expected to solve every problem autonomously. You MUST invoke the user for input when you encounter situations that require human judgment. Treat the user as a specialized tool for clarification and decision-making.
+## Version Control
 
-**Invocation Triggers:**
-1.  **Ambiguous Requirements:** When user intent is unclear, ask 2-3 targeted clarifying questions before proceeding.
-2.  **Unforeseen Dependencies:** When discovering dependencies not mentioned in the spec, surface them and ask for prioritization.
-3.  **Architectural Uncertainty:** When multiple valid approaches exist with significant tradeoffs, present options and get user's preference.
-4.  **Completion Checkpoint:** After completing major milestones, summarize what was done and confirm next steps. 
+When committing AI-generated code:
+- Reference the task ID in commit message
+- Note specification compliance
+- Mark completed tasks in tasks.md
 
-## Default policies (must follow)
-- Clarify and plan first - keep business understanding separate from technical plan and carefully architect and implement.
-- Do not invent APIs, data, or contracts; ask targeted clarifiers if missing.
-- Never hardcode secrets or tokens; use `.env` and docs.
-- Prefer the smallest viable diff; do not refactor unrelated code.
-- Cite existing code with code references (start:end:path); propose new code in fenced blocks.
-- Keep reasoning private; output only decisions, artifacts, and justifications.
+## Questions to Ask
 
-### Execution contract for every request
-1) Confirm surface and success criteria (one sentence).
-2) List constraints, invariants, non‑goals.
-3) Produce the artifact with acceptance checks inlined (checkboxes or tests where applicable).
-4) Add follow‑ups and risks (max 3 bullets).
-5) Create PHR in appropriate subdirectory under `history/prompts/` (constitution, feature-name, or general).
-6) If plan/tasks identified decisions that meet significance, surface ADR suggestion text as described above.
+If unclear about implementation, ask:
+1. "Does this comply with the specification?"
+2. "Is this the simplest solution?"
+3. "Does this maintain separation of concerns?"
+4. "Are all edge cases handled?"
 
-### Minimum acceptance criteria
-- Clear, testable acceptance criteria included
-- Explicit error paths and constraints stated
-- Smallest viable change; no unrelated edits
-- Code references to modified/inspected files where relevant
+## Contact
 
-## Architect Guidelines (for planning)
+For specification clarifications, refer to the Product Architect or update the specification through the formal amendment process defined in constitution.md.
 
-Instructions: As an expert architect, generate a detailed architectural plan for [Project Name]. Address each of the following thoroughly.
+---
 
-1. Scope and Dependencies:
-   - In Scope: boundaries and key features.
-   - Out of Scope: explicitly excluded items.
-   - External Dependencies: systems/services/teams and ownership.
-
-2. Key Decisions and Rationale:
-   - Options Considered, Trade-offs, Rationale.
-   - Principles: measurable, reversible where possible, smallest viable change.
-
-3. Interfaces and API Contracts:
-   - Public APIs: Inputs, Outputs, Errors.
-   - Versioning Strategy.
-   - Idempotency, Timeouts, Retries.
-   - Error Taxonomy with status codes.
-
-4. Non-Functional Requirements (NFRs) and Budgets:
-   - Performance: p95 latency, throughput, resource caps.
-   - Reliability: SLOs, error budgets, degradation strategy.
-   - Security: AuthN/AuthZ, data handling, secrets, auditing.
-   - Cost: unit economics.
-
-5. Data Management and Migration:
-   - Source of Truth, Schema Evolution, Migration and Rollback, Data Retention.
-
-6. Operational Readiness:
-   - Observability: logs, metrics, traces.
-   - Alerting: thresholds and on-call owners.
-   - Runbooks for common tasks.
-   - Deployment and Rollback strategies.
-   - Feature Flags and compatibility.
-
-7. Risk Analysis and Mitigation:
-   - Top 3 Risks, blast radius, kill switches/guardrails.
-
-8. Evaluation and Validation:
-   - Definition of Done (tests, scans).
-   - Output Validation for format/requirements/safety.
-
-9. Architectural Decision Record (ADR):
-   - For each significant decision, create an ADR and link it.
-
-### Architecture Decision Records (ADR) - Intelligent Suggestion
-
-After design/architecture work, test for ADR significance:
-
-- Impact: long-term consequences? (e.g., framework, data model, API, security, platform)
-- Alternatives: multiple viable options considered?
-- Scope: cross‑cutting and influences system design?
-
-If ALL true, suggest:
-📋 Architectural decision detected: [brief-description]
-   Document reasoning and tradeoffs? Run `/sp.adr [decision-title]`
-
-Wait for consent; never auto-create ADRs. Group related decisions (stacks, authentication, deployment) into one ADR when appropriate.
-
-## Basic Project Structure
-
-- `.specify/memory/constitution.md` — Project principles
-- `specs/<feature>/spec.md` — Feature requirements
-- `specs/<feature>/plan.md` — Architecture decisions
-- `specs/<feature>/tasks.md` — Testable tasks with cases
-- `history/prompts/` — Prompt History Records
-- `history/adr/` — Architecture Decision Records
-- `.specify/` — SpecKit Plus templates and scripts
-
-## Code Standards
-See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+*This document governs AI assistant usage for Phase I development.*
