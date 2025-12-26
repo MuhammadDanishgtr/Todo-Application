@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://localhost/todo"
     better_auth_secret: str = "change-me-in-production-min-32-chars"
     cors_origins: str = "http://localhost:3000"
+    debug: bool = False
 
     @property
     def cors_origins_list(self) -> list[str]:
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 @lru_cache
