@@ -1,0 +1,87 @@
+/**
+ * Centralized API client with JWT injection
+ */
+
+import type { Task, TaskCreate, TaskList, TaskUpdate } from '@/types/task';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+interface ApiError {
+  detail: string;
+  code?: string;
+  status: number;
+}
+
+class ApiClient {
+  private token: string | null = null;
+
+  setToken(token: string | null): void {
+    this.token = token;
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.token) {
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json().catch(() => ({
+        detail: 'An unexpected error occurred',
+        status: response.status,
+      }));
+      throw new Error(error.detail);
+    }
+
+    return response.json();
+  }
+
+  // Task endpoints
+  async getTasks(userId: string): Promise<TaskList> {
+    return this.request<TaskList>(`/api/${userId}/tasks`);
+  }
+
+  async getTask(userId: string, taskId: string): Promise<Task> {
+    return this.request<Task>(`/api/${userId}/tasks/${taskId}`);
+  }
+
+  async createTask(userId: string, data: TaskCreate): Promise<Task> {
+    return this.request<Task>(`/api/${userId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTask(userId: string, taskId: string, data: TaskUpdate): Promise<Task> {
+    return this.request<Task>(`/api/${userId}/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTask(userId: string, taskId: string): Promise<{ message: string; id: string }> {
+    return this.request<{ message: string; id: string }>(`/api/${userId}/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleComplete(userId: string, taskId: string): Promise<Task> {
+    return this.request<Task>(`/api/${userId}/tasks/${taskId}/complete`, {
+      method: 'PATCH',
+    });
+  }
+}
+
+export const apiClient = new ApiClient();
