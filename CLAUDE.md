@@ -4,6 +4,13 @@
 
 This document defines the rules and constraints for using Claude Code (AI assistant) in the development of the Todo App project.
 
+## Phase II: Full-Stack Web Application
+
+This project is now in **Phase II**, transitioning from a CLI application to a full-stack web application with:
+- Next.js frontend with Better Auth
+- FastAPI backend with JWT verification
+- Neon PostgreSQL database
+
 ## Constitutional Authority
 
 All AI-assisted development MUST comply with `constitution.md`. This document serves as supplementary guidance for AI interactions.
@@ -18,85 +25,79 @@ All AI-assisted development MUST comply with `constitution.md`. This document se
 ### Rule 2: Reference Documents
 Before generating code, consult these documents in order:
 1. `constitution.md` - Supreme governing document
-2. `specs/specify.md` - Technical specification
-3. `specs/plan.md` - Implementation plan
-4. `specs/tasks.md` - Task breakdown
+2. `specs/001-fullstack-todo-app/spec.md` - Feature specification
+3. `specs/001-fullstack-todo-app/plan.md` - Implementation plan
+4. `specs/001-fullstack-todo-app/tasks.md` - Task breakdown
 
 ### Rule 3: Compliance Verification
 All generated code must:
 - Trace back to a specification requirement
-- Follow the defined architecture (3-layer: CLI → Service → Storage)
-- Use only Python standard library (no external dependencies)
-- Support Python 3.13+
+- Follow the defined architecture (Frontend → API → Service → Database)
+- Use the mandated technology stack (Next.js, FastAPI, SQLModel, PostgreSQL)
+- Support Python 3.11+ and TypeScript strict mode
+
+## Project Structure
+
+```
+/
+├── backend/                  # FastAPI application
+│   ├── src/
+│   │   ├── api/              # API routes
+│   │   ├── models/           # SQLModel models
+│   │   ├── schemas/          # Pydantic schemas
+│   │   ├── services/         # Business logic
+│   │   └── auth/             # JWT verification
+│   └── CLAUDE.md             # Backend-specific guidelines
+├── frontend/                 # Next.js application
+│   ├── src/
+│   │   ├── app/              # App Router pages
+│   │   ├── components/       # React components
+│   │   ├── lib/              # Utilities
+│   │   └── types/            # TypeScript types
+│   └── CLAUDE.md             # Frontend-specific guidelines
+└── specs/                    # Specifications
+```
 
 ## Code Generation Principles
 
 ### DO:
 - Generate clean, readable, self-documenting code
 - Follow single responsibility principle
-- Use type hints for all function signatures
-- Include docstrings for classes and public methods
+- Use type hints (Python) and strict TypeScript
 - Implement proper error handling
 - Follow the established project structure
+- Verify user ownership on all task operations
 
 ### DO NOT:
 - Add features not in specifications
-- Use external dependencies
+- Use technologies outside the mandated stack
 - Deviate from the layered architecture
 - Generate random or non-deterministic behavior
-- Include debug/test code in production modules
 - Skip input validation
+- Allow cross-user data access
 
-## Prohibited Actions
+## Security Requirements
 
-1. **No Manual Boilerplate** - All code must be AI-generated based on specs
-2. **No External APIs** - Application must work offline
-3. **No Randomness** - Deterministic behavior only
-4. **No Persistence** - Phase I is in-memory only
-5. **No Breaking Changes** - Maintain backward compatibility within phase
+1. **Authentication Required**: All API endpoints require JWT authentication
+2. **User Isolation**: Users can only access their own tasks
+3. **Ownership Verification**: Verify task ownership on every operation
+4. **Input Validation**: Validate all user input on both frontend and backend
 
-## Required Practices
+## API Endpoints
 
-### Before Implementation:
-- [ ] Read relevant specification sections
-- [ ] Understand the task context
-- [ ] Identify affected modules
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/{user_id}/tasks` | List user's tasks |
+| POST | `/api/{user_id}/tasks` | Create task |
+| GET | `/api/{user_id}/tasks/{id}` | Get task |
+| PUT | `/api/{user_id}/tasks/{id}` | Update task |
+| DELETE | `/api/{user_id}/tasks/{id}` | Delete task |
+| PATCH | `/api/{user_id}/tasks/{id}/complete` | Toggle complete |
 
-### During Implementation:
-- [ ] Follow file creation order from plan.md
-- [ ] Implement bottom-up (data → service → CLI)
-- [ ] Validate each layer before proceeding
+## Sub-Project Guidelines
 
-### After Implementation:
-- [ ] Verify acceptance criteria
-- [ ] Ensure specification compliance
-- [ ] Update task status in tasks.md
-
-## Module Responsibilities
-
-| Module | Responsibility | AI Guidance |
-|--------|---------------|-------------|
-| `models.py` | Data structures | Only Task dataclass |
-| `storage.py` | Data persistence | In-memory dict only |
-| `service.py` | Business logic | Validation, operations |
-| `cli.py` | User interface | Menu, I/O handling |
-| `__main__.py` | Entry point | Dependency wiring |
-
-## Error Handling Guidelines
-
-- Use `ValueError` for validation errors
-- Return `None` for not-found cases
-- Return `bool` for success/failure operations
-- Display user-friendly messages in CLI (✓ for success, ✗ for errors)
-
-## Input Validation Rules
-
-| Input | Validation | Error Response |
-|-------|------------|----------------|
-| Menu choice | 1-6 integer | Re-prompt |
-| Task ID | Positive integer | Error message |
-| Title | Non-empty, ≤100 chars | Error message |
-| Description | ≤500 chars | Error message |
+For backend-specific guidance, see: `backend/CLAUDE.md`
+For frontend-specific guidance, see: `frontend/CLAUDE.md`
 
 ## Version Control
 
@@ -105,18 +106,6 @@ When committing AI-generated code:
 - Note specification compliance
 - Mark completed tasks in tasks.md
 
-## Questions to Ask
-
-If unclear about implementation, ask:
-1. "Does this comply with the specification?"
-2. "Is this the simplest solution?"
-3. "Does this maintain separation of concerns?"
-4. "Are all edge cases handled?"
-
-## Contact
-
-For specification clarifications, refer to the Product Architect or update the specification through the formal amendment process defined in constitution.md.
-
 ---
 
-*This document governs AI assistant usage for Phase I development.*
+*This document governs AI assistant usage for Phase II development.*

@@ -1,0 +1,150 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { Task } from '@/types/task';
+import { TaskList } from '@/components/tasks/task-list';
+import { TaskForm } from '@/components/tasks/task-form';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiClient } from '@/lib/api-client';
+
+export default function DashboardPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTasks = useCallback(async (uid: string, token: string) => {
+    try {
+      apiClient.setToken(token);
+      const data = await apiClient.getTasks(uid);
+      setTasks(data.tasks || []);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
+    }
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) return;
+
+        const sessionData = await sessionResponse.json();
+        if (!sessionData.user) return;
+
+        setUserId(sessionData.user.id);
+        setAccessToken(sessionData.accessToken || '');
+
+        await fetchTasks(sessionData.user.id, sessionData.accessToken || '');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load session');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
+  }, [fetchTasks]);
+
+  const handleCreateTask = async (title: string, description: string) => {
+    if (!userId || !accessToken) return;
+    apiClient.setToken(accessToken);
+    const newTask = await apiClient.createTask(userId, { title, description });
+    setTasks((prev) => [newTask, ...prev]);
+    setShowForm(false);
+  };
+
+  const handleUpdateTask = async (title: string, description: string) => {
+    if (!userId || !accessToken || !editingTask) return;
+    apiClient.setToken(accessToken);
+    const updatedTask = await apiClient.updateTask(userId, editingTask.id, {
+      title,
+      description,
+    });
+    setTasks((prev) =>
+      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+    );
+    setEditingTask(null);
+  };
+
+  const handleToggleComplete = async (taskId: string) => {
+    if (!userId || !accessToken) return;
+    apiClient.setToken(accessToken);
+    const updatedTask = await apiClient.toggleComplete(userId, taskId);
+    setTasks((prev) =>
+      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+    );
+  };
+
+  const handleDelete = async (taskId: string) => {
+    if (!userId || !accessToken) return;
+    apiClient.setToken(accessToken);
+    await apiClient.deleteTask(userId, taskId);
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+  };
+
+  const handleEdit = (task: Task) => {
+    setEditingTask(task);
+    setShowForm(false);
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingTask(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
+          <p className="text-gray-600">Manage your tasks below</p>
+        </div>
+        {!showForm && !editingTask && (
+          <Button onClick={() => setShowForm(true)}>Add Task</Button>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {(showForm || editingTask) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>{editingTask ? 'Edit Task' : 'New Task'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TaskForm
+              task={editingTask || undefined}
+              onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+              onCancel={handleCancelForm}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <TaskList
+        tasks={tasks}
+        onToggleComplete={handleToggleComplete}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+    </div>
+  );
+}
