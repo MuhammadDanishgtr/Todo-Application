@@ -9,17 +9,25 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async (email: string, password: string) => {
-    const result = await authClient.signIn.email({
-      email,
-      password,
-    });
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+      });
 
-    if (result.error) {
-      throw new Error(result.error.message || 'Login failed');
+      console.log('SignIn result:', result);
+
+      if (result.error) {
+        console.error('SignIn error:', result.error);
+        throw new Error(result.error.message || result.error.code || JSON.stringify(result.error) || 'Login failed');
+      }
+
+      // Redirect to dashboard on success
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Login catch error:', err);
+      throw err;
     }
-
-    // Redirect to dashboard on success
-    router.push('/dashboard');
   };
 
   const handleSwitchToRegister = () => {
