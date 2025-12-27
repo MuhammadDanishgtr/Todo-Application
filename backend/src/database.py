@@ -1,6 +1,5 @@
 """Database connection and session management."""
 
-import ssl
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -11,16 +10,21 @@ from .config import get_settings
 
 settings = get_settings()
 
-# Create SSL context for Neon PostgreSQL
-ssl_context = ssl.create_default_context()
-ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
+
+def get_clean_database_url() -> str:
+    """Remove SSL parameters from URL since we handle SSL via connect_args."""
+    url = settings.database_url
+    # Remove any SSL-related query parameters to avoid conflicts
+    for param in ["?ssl=require", "&ssl=require", "?sslmode=require", "&sslmode=require"]:
+        url = url.replace(param, "")
+    return url
+
 
 engine = create_async_engine(
-    settings.database_url,
+    get_clean_database_url(),
     echo=False,
     future=True,
-    connect_args={"ssl": ssl_context},
+    connect_args={"ssl": "require"},
 )
 
 async_session_maker = sessionmaker(
