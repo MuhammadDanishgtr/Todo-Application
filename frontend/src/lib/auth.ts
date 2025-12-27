@@ -3,11 +3,17 @@
  */
 
 import { betterAuth } from 'better-auth';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+
+// Create Neon HTTP client for serverless
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
 
 export const auth = betterAuth({
   database: {
-    provider: 'pg',
-    url: process.env.DATABASE_URL!,
+    db: db,
+    type: 'postgres',
   },
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
