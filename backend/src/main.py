@@ -40,10 +40,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS
+# Configure CORS - allow all origins for now, we'll restrict later
+# Include both the settings origins and common Vercel patterns
+cors_origins = settings.cors_origins_list + [
+    "https://frontend-iota-six-87.vercel.app",
+    "https://*.vercel.app",
+]
+logger.info(f"CORS origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=["*"],  # Allow all origins for debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
