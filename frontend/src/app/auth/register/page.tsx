@@ -3,21 +3,20 @@
 import { RegisterForm } from '@/components/auth/register-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const handleRegister = async (email: string, password: string, name?: string) => {
-    const response = await fetch('/api/auth/sign-up/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name: name || email.split('@')[0] }),
-    });
+    const result = await authClient.signUp.email({
+      email,
+      password,
+      name: name ?? email.split('@')[0],
+    } as { email: string; password: string; name: string });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || data.error || 'Registration failed');
+    if (result.error) {
+      throw new Error(result.error.message || 'Registration failed');
     }
 
     // Redirect to dashboard on success

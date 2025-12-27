@@ -3,21 +3,19 @@
 import { LoginForm } from '@/components/auth/login-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
 
 export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/sign-in/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    const result = await authClient.signIn.email({
+      email,
+      password,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || data.error || 'Login failed');
+    if (result.error) {
+      throw new Error(result.error.message || 'Login failed');
     }
 
     // Redirect to dashboard on success
