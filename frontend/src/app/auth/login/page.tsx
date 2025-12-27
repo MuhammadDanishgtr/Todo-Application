@@ -8,15 +8,16 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/signin', {
+    const response = await fetch('/api/auth/sign-in/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      throw new Error(data.message || data.error || 'Login failed');
     }
 
     // Redirect to dashboard on success

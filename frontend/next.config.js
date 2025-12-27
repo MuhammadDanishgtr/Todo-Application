@@ -6,6 +6,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  serverExternalPackages: ['pg', '@neondatabase/serverless', 'better-auth'],
 }
 
 module.exports = nextConfig
