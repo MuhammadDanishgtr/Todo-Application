@@ -7,6 +7,7 @@ import { TaskForm } from '@/components/tasks/task-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiClient } from '@/lib/api-client';
+import { authClient } from '@/lib/auth-client';
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -31,16 +32,17 @@ export default function DashboardPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const sessionResponse = await fetch('/api/auth/session');
-        if (!sessionResponse.ok) return;
+        const session = await authClient.getSession();
+        console.log('Dashboard session:', session);
 
-        const sessionData = await sessionResponse.json();
-        if (!sessionData.user) return;
+        if (!session.data?.user) return;
 
-        setUserId(sessionData.user.id);
-        setAccessToken(sessionData.accessToken || '');
+        const user = session.data.user;
+        setUserId(user.id);
+        // Better Auth uses session token from cookies, not accessToken
+        setAccessToken(session.data.session?.token || '');
 
-        await fetchTasks(sessionData.user.id, sessionData.accessToken || '');
+        await fetchTasks(user.id, session.data.session?.token || '');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load session');
       } finally {

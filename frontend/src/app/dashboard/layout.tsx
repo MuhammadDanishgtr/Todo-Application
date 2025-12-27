@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { authClient } from '@/lib/auth-client';
 
 interface User {
   id: string;
@@ -21,18 +22,15 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/session');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.user) {
-            setUser(data.user);
-          } else {
-            router.push('/auth/login');
-          }
+        const session = await authClient.getSession();
+        console.log('Session check:', session);
+        if (session.data?.user) {
+          setUser(session.data.user as User);
         } else {
           router.push('/auth/login');
         }
-      } catch {
+      } catch (err) {
+        console.error('Auth check error:', err);
         router.push('/auth/login');
       } finally {
         setIsLoading(false);
@@ -44,7 +42,7 @@ export default function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST' });
+      await authClient.signOut();
       router.push('/');
     } catch {
       router.push('/');
