@@ -40,6 +40,11 @@ class ApiClient {
       throw new Error(message);
     }
 
+    // Handle 204 No Content responses
+    if (response.status === 204) {
+      return {} as T;
+    }
+
     return response.json();
   }
 
@@ -71,8 +76,8 @@ class ApiClient {
     });
   }
 
-  async deleteTask(userId: string, taskId: string): Promise<{ message: string; id: string }> {
-    return this.request<{ message: string; id: string }>(`/api/${userId}/tasks/${taskId}`, {
+  async deleteTask(userId: string, taskId: string): Promise<void> {
+    await this.request<void>(`/api/${userId}/tasks/${taskId}`, {
       method: 'DELETE',
     });
   }
