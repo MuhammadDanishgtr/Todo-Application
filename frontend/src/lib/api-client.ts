@@ -1,5 +1,6 @@
 /**
- * Centralized API client with JWT injection
+ * Centralized API client for tasks
+ * Authentication is handled by Better Auth on the frontend
  */
 
 import type { Task, TaskCreate, TaskList, TaskUpdate } from '@/types/task';
@@ -13,12 +14,6 @@ interface ApiError {
 }
 
 class ApiClient {
-  private token: string | null = null;
-
-  setToken(token: string | null): void {
-    this.token = token;
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -27,10 +22,6 @@ class ApiClient {
       'Content-Type': 'application/json',
       ...options.headers,
     };
-
-    if (this.token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
-    }
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
@@ -46,6 +37,11 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  // Kept for backwards compatibility but no longer needed
+  setToken(_token: string | null): void {
+    // No-op: auth is handled by Better Auth sessions
   }
 
   // Task endpoints

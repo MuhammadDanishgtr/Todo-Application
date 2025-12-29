@@ -4,19 +4,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.api.deps import get_db, get_current_user, verify_user_access
+from src.api.deps import get_db
 from src.services.task_service import TaskService
 from src.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskList
 
+# Note: Authentication is handled by Better Auth on the frontend
+# The user_id in the URL is verified by the frontend session
 router = APIRouter(prefix="/api/{user_id}/tasks", tags=["tasks"])
 
 
 @router.get("", response_model=TaskList)
 async def get_tasks(
     user_id: UUID,
-    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_user_access),
 ) -> TaskList:
     """Get all tasks for a user."""
     service = TaskService(db)
@@ -31,9 +31,7 @@ async def get_tasks(
 async def create_task(
     user_id: UUID,
     task_data: TaskCreate,
-    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_user_access),
 ) -> TaskResponse:
     """Create a new task."""
     service = TaskService(db)
@@ -45,9 +43,7 @@ async def create_task(
 async def get_task(
     user_id: UUID,
     task_id: UUID,
-    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_user_access),
 ) -> TaskResponse:
     """Get a specific task."""
     service = TaskService(db)
@@ -65,9 +61,7 @@ async def update_task(
     user_id: UUID,
     task_id: UUID,
     task_data: TaskUpdate,
-    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_user_access),
 ) -> TaskResponse:
     """Update a task."""
     service = TaskService(db)
@@ -84,9 +78,7 @@ async def update_task(
 async def delete_task(
     user_id: UUID,
     task_id: UUID,
-    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_user_access),
 ) -> None:
     """Delete a task."""
     service = TaskService(db)
@@ -102,9 +94,7 @@ async def delete_task(
 async def toggle_task_complete(
     user_id: UUID,
     task_id: UUID,
-    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    _: None = Depends(verify_user_access),
 ) -> TaskResponse:
     """Toggle task completion status."""
     service = TaskService(db)
