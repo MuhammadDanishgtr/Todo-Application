@@ -15,11 +15,18 @@ settings = get_settings()
 
 
 def get_clean_database_url() -> str:
-    """Remove SSL parameters from URL since we handle SSL via connect_args."""
+    """Clean and format DATABASE_URL for asyncpg."""
     url = settings.database_url
-    # Remove any SSL-related query parameters to avoid conflicts
-    for param in ["?ssl=require", "&ssl=require", "?sslmode=require", "&sslmode=require"]:
-        url = url.replace(param, "")
+
+    # Ensure it uses asyncpg driver
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    # Remove query parameters that conflict with our SSL setup
+    if "?" in url:
+        base_url = url.split("?")[0]
+        url = base_url
+
     # Log sanitized URL (hide password)
     sanitized = url.split("@")[1] if "@" in url else url
     logger.info(f"Database host: {sanitized}")
