@@ -33,7 +33,11 @@ class ApiClient {
         detail: 'An unexpected error occurred',
         status: response.status,
       }));
-      throw new Error(error.detail);
+      // Ensure detail is a string
+      const message = typeof error.detail === 'string'
+        ? error.detail
+        : JSON.stringify(error.detail) || 'Request failed';
+      throw new Error(message);
     }
 
     return response.json();

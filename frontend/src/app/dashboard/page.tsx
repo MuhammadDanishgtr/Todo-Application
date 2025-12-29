@@ -13,14 +13,12 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTasks = useCallback(async (uid: string, token: string) => {
+  const fetchTasks = useCallback(async (uid: string) => {
     try {
-      apiClient.setToken(token);
       const data = await apiClient.getTasks(uid);
       setTasks(data.tasks || []);
       setError(null);
@@ -39,10 +37,8 @@ export default function DashboardPage() {
 
         const user = session.data.user;
         setUserId(user.id);
-        // Better Auth uses session token from cookies, not accessToken
-        setAccessToken(session.data.session?.token || '');
 
-        await fetchTasks(user.id, session.data.session?.token || '');
+        await fetchTasks(user.id);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load session');
       } finally {
@@ -54,16 +50,15 @@ export default function DashboardPage() {
   }, [fetchTasks]);
 
   const handleCreateTask = async (title: string, description: string) => {
-    if (!userId || !accessToken) return;
-    apiClient.setToken(accessToken);
+    if (!userId) throw new Error('User not authenticated');
     const newTask = await apiClient.createTask(userId, { title, description });
     setTasks((prev) => [newTask, ...prev]);
     setShowForm(false);
+    setError(null);
   };
 
   const handleUpdateTask = async (title: string, description: string) => {
-    if (!userId || !accessToken || !editingTask) return;
-    apiClient.setToken(accessToken);
+    if (!userId || !editingTask) throw new Error('Cannot update task');
     const updatedTask = await apiClient.updateTask(userId, editingTask.id, {
       title,
       description,
@@ -72,22 +67,29 @@ export default function DashboardPage() {
       prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
     );
     setEditingTask(null);
+    setError(null);
   };
 
   const handleToggleComplete = async (taskId: string) => {
-    if (!userId || !accessToken) return;
-    apiClient.setToken(accessToken);
-    const updatedTask = await apiClient.toggleComplete(userId, taskId);
-    setTasks((prev) =>
-      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-    );
+    if (!userId) return;
+    try {
+      const updatedTask = await apiClient.toggleComplete(userId, taskId);
+      setTasks((prev) =>
+        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update task');
+    }
   };
 
   const handleDelete = async (taskId: string) => {
-    if (!userId || !accessToken) return;
-    apiClient.setToken(accessToken);
-    await apiClient.deleteTask(userId, taskId);
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (!userId) return;
+    try {
+      await apiClient.deleteTask(userId, taskId);
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete task');
+    }
   };
 
   const handleEdit = (task: Task) => {
