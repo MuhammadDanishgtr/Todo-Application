@@ -65,3 +65,9 @@ app.include_router(tasks_router)
 async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@app.get("/api/test")
+async def test_endpoint() -> dict[str, str]:
+    """Test endpoint to verify API is working."""
+    return {"message": "API is working!", "cors": "enabled"}
