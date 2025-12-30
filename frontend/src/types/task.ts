@@ -24,5 +24,5 @@ export interface TaskUpdate {
 
 export interface TaskList {
   tasks: Task[];
-  count: number;
+  total: number;
 }

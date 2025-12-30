@@ -13,7 +13,8 @@ class Task(SQLModel, table=True):
     __tablename__ = "tasks"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: UUID = Field(foreign_key="users.id", index=True)
+    # user_id is a string because Better Auth uses string IDs, not UUIDs
+    user_id: str = Field(index=True)
     title: str = Field(max_length=100)
     description: Optional[str] = Field(default=None, max_length=500)
     is_completed: bool = Field(default=False)

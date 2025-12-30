@@ -15,19 +15,23 @@ class TaskService:
         """Initialize with database session."""
         self.session = session
 
-    async def get_tasks(self, user_id: UUID) -> list[Task]:
+    async def get_tasks(self, user_id: str) -> list[Task]:
         """Get all tasks for a user."""
         statement = select(Task).where(Task.user_id == user_id).order_by(Task.created_at.desc())
         result = await self.session.exec(statement)
         return list(result.all())
 
-    async def get_task(self, task_id: UUID, user_id: UUID) -> Task | None:
+    async def get_task(self, task_id: str, user_id: str) -> Task | None:
         """Get a specific task by ID for a user."""
-        statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
+        try:
+            task_uuid = UUID(task_id)
+        except ValueError:
+            return None
+        statement = select(Task).where(Task.id == task_uuid, Task.user_id == user_id)
         result = await self.session.exec(statement)
         return result.first()
 
-    async def create_task(self, user_id: UUID, task_data: TaskCreate) -> Task:
+    async def create_task(self, user_id: str, task_data: TaskCreate) -> Task:
         """Create a new task for a user."""
         task = Task(
             user_id=user_id,
@@ -40,7 +44,7 @@ class TaskService:
         return task
 
     async def update_task(
-        self, task_id: UUID, user_id: UUID, task_data: TaskUpdate
+        self, task_id: str, user_id: str, task_data: TaskUpdate
     ) -> Task | None:
         """Update an existing task."""
         task = await self.get_task(task_id, user_id)
@@ -56,7 +60,7 @@ class TaskService:
         await self.session.refresh(task)
         return task
 
-    async def delete_task(self, task_id: UUID, user_id: UUID) -> bool:
+    async def delete_task(self, task_id: str, user_id: str) -> bool:
         """Delete a task."""
         task = await self.get_task(task_id, user_id)
         if not task:
@@ -66,7 +70,7 @@ class TaskService:
         await self.session.commit()
         return True
 
-    async def toggle_complete(self, task_id: UUID, user_id: UUID) -> Task | None:
+    async def toggle_complete(self, task_id: str, user_id: str) -> Task | None:
         """Toggle the completion status of a task."""
         task = await self.get_task(task_id, user_id)
         if not task:

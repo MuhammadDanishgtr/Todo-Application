@@ -25,7 +25,7 @@ class TaskResponse(BaseModel):
     """Schema for task response data."""
 
     id: UUID
-    user_id: UUID
+    user_id: str  # Better Auth uses string IDs
     title: str
     description: Optional[str]
     is_completed: bool
@@ -40,4 +40,4 @@ class TaskList(BaseModel):
     """Schema for list of tasks response."""
 
     tasks: list[TaskResponse]
-    count: int
+    total: int

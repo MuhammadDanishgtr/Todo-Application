@@ -10,12 +10,13 @@ from src.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskList
 
 # Note: Authentication is handled by Better Auth on the frontend
 # The user_id in the URL is verified by the frontend session
+# Better Auth uses string IDs, not UUIDs
 router = APIRouter(prefix="/api/{user_id}/tasks", tags=["tasks"])
 
 
 @router.get("", response_model=TaskList)
 async def get_tasks(
-    user_id: UUID,
+    user_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> TaskList:
     """Get all tasks for a user."""
@@ -29,7 +30,7 @@ async def get_tasks(
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_task(
-    user_id: UUID,
+    user_id: str,
     task_data: TaskCreate,
     db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
@@ -41,8 +42,8 @@ async def create_task(
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
-    user_id: UUID,
-    task_id: UUID,
+    user_id: str,
+    task_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """Get a specific task."""
@@ -58,8 +59,8 @@ async def get_task(
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(
-    user_id: UUID,
-    task_id: UUID,
+    user_id: str,
+    task_id: str,
     task_data: TaskUpdate,
     db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
@@ -76,8 +77,8 @@ async def update_task(
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
-    user_id: UUID,
-    task_id: UUID,
+    user_id: str,
+    task_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a task."""
@@ -92,8 +93,8 @@ async def delete_task(
 
 @router.patch("/{task_id}/complete", response_model=TaskResponse)
 async def toggle_task_complete(
-    user_id: UUID,
-    task_id: UUID,
+    user_id: str,
+    task_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """Toggle task completion status."""
