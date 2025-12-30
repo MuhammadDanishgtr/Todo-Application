@@ -1,8 +1,10 @@
 """Tasks API routes."""
 
-from uuid import UUID
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from src.api.deps import get_db
 from src.services.task_service import TaskService

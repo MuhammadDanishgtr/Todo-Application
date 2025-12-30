@@ -19,10 +19,13 @@ export default function DashboardPage() {
 
   const fetchTasks = useCallback(async (uid: string) => {
     try {
+      console.log('Fetching tasks for user:', uid);
       const data = await apiClient.getTasks(uid);
+      console.log('Tasks fetched:', data);
       setTasks(data.tasks || []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching tasks:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
     }
   }, []);
@@ -33,13 +36,19 @@ export default function DashboardPage() {
         const session = await authClient.getSession();
         console.log('Dashboard session:', session);
 
-        if (!session.data?.user) return;
+        if (!session.data?.user) {
+          console.log('No user in session');
+          setIsLoading(false);
+          return;
+        }
 
         const user = session.data.user;
+        console.log('User ID:', user.id);
         setUserId(user.id);
 
         await fetchTasks(user.id);
       } catch (err) {
+        console.error('Error in init:', err);
         setError(err instanceof Error ? err.message : 'Failed to load session');
       } finally {
         setIsLoading(false);
@@ -51,14 +60,15 @@ export default function DashboardPage() {
 
   const handleCreateTask = async (title: string, description: string) => {
     if (!userId) throw new Error('User not authenticated');
+    setError(null);
     const newTask = await apiClient.createTask(userId, { title, description });
     setTasks((prev) => [newTask, ...prev]);
     setShowForm(false);
-    setError(null);
   };
 
   const handleUpdateTask = async (title: string, description: string) => {
     if (!userId || !editingTask) throw new Error('Cannot update task');
+    setError(null);
     const updatedTask = await apiClient.updateTask(userId, editingTask.id, {
       title,
       description,
@@ -67,27 +77,33 @@ export default function DashboardPage() {
       prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
     );
     setEditingTask(null);
-    setError(null);
   };
 
   const handleToggleComplete = async (taskId: string) => {
     if (!userId) return;
+    setError(null);
     try {
+      console.log('Toggling task:', taskId, 'for user:', userId);
       const updatedTask = await apiClient.toggleComplete(userId, taskId);
+      console.log('Toggle result:', updatedTask);
       setTasks((prev) =>
         prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
       );
     } catch (err) {
+      console.error('Error toggling task:', err);
       setError(err instanceof Error ? err.message : 'Failed to update task');
     }
   };
 
   const handleDelete = async (taskId: string) => {
     if (!userId) return;
+    setError(null);
     try {
+      console.log('Deleting task:', taskId, 'for user:', userId);
       await apiClient.deleteTask(userId, taskId);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
     } catch (err) {
+      console.error('Error deleting task:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete task');
     }
   };

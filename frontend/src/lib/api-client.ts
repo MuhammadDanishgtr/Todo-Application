@@ -7,6 +7,11 @@ import type { Task, TaskCreate, TaskList, TaskUpdate } from '@/types/task';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Log API URL for debugging (only in browser)
+if (typeof window !== 'undefined') {
+  console.log('API_URL:', API_URL);
+}
+
 interface ApiError {
   detail: string;
   code?: string;
@@ -18,15 +23,20 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const url = `${API_URL}${endpoint}`;
+    console.log('API Request:', options.method || 'GET', url);
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(url, {
       ...options,
       headers,
     });
+
+    console.log('API Response:', response.status, response.statusText);
 
     if (!response.ok) {
       const error: ApiError = await response.json().catch(() => ({
