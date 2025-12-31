@@ -22,12 +22,18 @@ async def get_tasks(
     db: AsyncSession = Depends(get_db),
 ) -> TaskList:
     """Get all tasks for a user."""
-    service = TaskService(db)
-    tasks = await service.get_tasks(user_id)
-    return TaskList(
-        tasks=[TaskResponse.model_validate(task) for task in tasks],
-        total=len(tasks),
-    )
+    logger.info(f"GET /tasks called for user: {user_id}")
+    try:
+        service = TaskService(db)
+        tasks = await service.get_tasks(user_id)
+        logger.info(f"Found {len(tasks)} tasks for user {user_id}")
+        return TaskList(
+            tasks=[TaskResponse.model_validate(task) for task in tasks],
+            total=len(tasks),
+        )
+    except Exception as e:
+        logger.error(f"Error getting tasks: {e}")
+        raise
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -84,13 +90,21 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a task."""
-    service = TaskService(db)
-    deleted = await service.delete_task(task_id, user_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
-        )
+    logger.info(f"DELETE /tasks/{task_id} called for user: {user_id}")
+    try:
+        service = TaskService(db)
+        deleted = await service.delete_task(task_id, user_id)
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found",
+            )
+        logger.info(f"Task {task_id} deleted successfully")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting task: {e}")
+        raise
 
 
 @router.patch("/{task_id}/complete", response_model=TaskResponse)
@@ -100,11 +114,19 @@ async def toggle_task_complete(
     db: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """Toggle task completion status."""
-    service = TaskService(db)
-    task = await service.toggle_complete(task_id, user_id)
-    if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
-        )
-    return TaskResponse.model_validate(task)
+    logger.info(f"PATCH /tasks/{task_id}/complete called for user: {user_id}")
+    try:
+        service = TaskService(db)
+        task = await service.toggle_complete(task_id, user_id)
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found",
+            )
+        logger.info(f"Task {task_id} toggled to is_completed={task.is_completed}")
+        return TaskResponse.model_validate(task)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling task: {e}")
+        raise
