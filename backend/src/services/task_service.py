@@ -1,8 +1,8 @@
 """Task service for business logic operations."""
 
 from uuid import UUID
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.task import Task
 from src.schemas.task import TaskCreate, TaskUpdate
@@ -18,8 +18,8 @@ class TaskService:
     async def get_tasks(self, user_id: str) -> list[Task]:
         """Get all tasks for a user."""
         statement = select(Task).where(Task.user_id == user_id).order_by(Task.created_at.desc())
-        result = await self.session.exec(statement)
-        return list(result.all())
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
 
     async def get_task(self, task_id: str, user_id: str) -> Task | None:
         """Get a specific task by ID for a user."""
@@ -28,8 +28,8 @@ class TaskService:
         except ValueError:
             return None
         statement = select(Task).where(Task.id == task_uuid, Task.user_id == user_id)
-        result = await self.session.exec(statement)
-        return result.first()
+        result = await self.session.execute(statement)
+        return result.scalars().first()
 
     async def create_task(self, user_id: str, task_data: TaskCreate) -> Task:
         """Create a new task for a user."""
