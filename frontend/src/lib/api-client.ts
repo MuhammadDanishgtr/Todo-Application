@@ -21,7 +21,8 @@ interface ApiError {
 class ApiClient {
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retries = 2
   ): Promise<T> {
     const url = `${API_URL}${endpoint}`;
     const method = options.method || 'GET';
@@ -35,13 +36,28 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      mode: 'cors',
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        mode: 'cors',
+      });
 
-    console.log('API Response:', response.status, response.statusText);
+      console.log('API Response:', response.status, response.statusText);
+      return await this.handleResponse<T>(response);
+    } catch (error) {
+      console.error('Fetch error:', error);
+      if (retries > 0) {
+        console.log(`Retrying... (${retries} attempts left)`);
+        // Wait 1 second before retry (helps with cold starts)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return this.request<T>(endpoint, options, retries - 1);
+      }
+      throw error;
+    }
+  }
+
+  private async handleResponse<T>(response: Response): Promise<T> {
 
     if (!response.ok) {
       const error: ApiError = await response.json().catch(() => ({
